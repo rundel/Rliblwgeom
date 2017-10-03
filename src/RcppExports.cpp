@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // get_lwgeom_version
 std::string get_lwgeom_version();
-RcppExport SEXP _liblwgeom_get_lwgeom_version() {
+RcppExport SEXP _Rliblwgeom_get_lwgeom_version() {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -17,11 +17,11 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_liblwgeom_get_lwgeom_version", (DL_FUNC) &_liblwgeom_get_lwgeom_version, 0},
+    {"_Rliblwgeom_get_lwgeom_version", (DL_FUNC) &_Rliblwgeom_get_lwgeom_version, 0},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_liblwgeom(DllInfo *dll) {
+RcppExport void R_init_Rliblwgeom(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

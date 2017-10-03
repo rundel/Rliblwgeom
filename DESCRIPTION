@@ -1,4 +1,4 @@
-Package: liblwgeom
+Package: Rliblwgeom
 Type: Package
 Title: R package providing the liblwgeom library from postgis
 Version: 0.1.0
@@ -10,5 +10,5 @@ License: GPL (>= 2)
 LazyLoad: yes
 LinkingTo: Rcpp
 Imports: Rcpp (>= 0.11.0)
-URL: http://www.github.com/rundel/liblwgeom
-BugReports: http://www.github.com/rundel/liblwgeom/issues
+URL: http://www.github.com/rundel/Rliblwgeom
+BugReports: http://www.github.com/rundel/Rliblwgeom/issues

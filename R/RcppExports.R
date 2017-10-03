@@ -2,6 +2,6 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 get_lwgeom_version <- function() {
-    .Call('_liblwgeom_get_lwgeom_version', PACKAGE = 'liblwgeom')
+    .Call('_Rliblwgeom_get_lwgeom_version', PACKAGE = 'Rliblwgeom')
 }
 

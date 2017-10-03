@@ -1,4 +1,4 @@
-useDynLib(liblwgeom)
+useDynLib(Rliblwgeom)
 import(Rcpp)
 
 exportPattern("^[[:alpha:]]+")
