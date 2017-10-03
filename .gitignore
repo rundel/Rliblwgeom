@@ -17,3 +17,8 @@ inst/lib
 config.status
 src/Makevars
 postgis-*/
+
+liblwgeom/Makefile
+liblwgeom/*.o
+liblwgeom/liblwgeom.h
+liblwgeom/liblwgeom.a
