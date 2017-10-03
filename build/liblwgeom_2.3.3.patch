@@ -1,0 +1,462 @@
+diff -ruN liblwgeom/Makefile.in liblwgeom_new/Makefile.in
+--- liblwgeom/Makefile.in	2016-06-16 05:09:26.000000000 -0400
++++ liblwgeom_new/Makefile.in	2017-10-03 15:12:48.000000000 -0400
+@@ -22,28 +22,18 @@
+ # *
+ # **********************************************************************/
+ 
++PREFIX = ../inst
++
+ CC = @CC@
+ CPPFLAGS = @CPPFLAGS@
+-CFLAGS = @CFLAGS@ @PICFLAGS@ @WARNFLAGS@ @GEOS_CPPFLAGS@ @PROJ_CPPFLAGS@ @JSON_CPPFLAGS@
+-LDFLAGS = @LDFLAGS@ @GEOS_LDFLAGS@ -lgeos_c @PROJ_LDFLAGS@ -lproj @JSON_LDFLAGS@
+-NUMERICFLAGS = @NUMERICFLAGS@
+-top_builddir = @top_builddir@
+-prefix = @prefix@
+-exec_prefix = @exec_prefix@
+-libdir = @libdir@
+-includedir = @includedir@
+-SHELL = @SHELL@
+-INSTALL = $(SHELL) ../install-sh
+-LIBTOOL = @LIBTOOL@
+-
+-SOVER = @POSTGIS_MAJOR_VERSION@.@POSTGIS_MINOR_VERSION@
+-
+-IFACE_CURRENT = @LIBLWGEOM_CURRENT@
+-IFACE_AGE = @LIBLWGEOM_AGE@
+-IFACE_REV = @LIBLWGEOM_REV@
++CFLAGS = @CFLAGS@
++LDFLAGS = @LDFLAGS@
+ 
+-VERSION_INFO = $(IFACE_CURRENT):$(IFACE_REV):$(IFACE_AGE)
++IFACE_CURRENT = `cat Version.config | grep ^LIBLWGEOM_IFACE_CUR | sed 's/[[^=]]*=\([[0-9]]\)/\1/g'`
++IFACE_AGE = `cat Version.config | grep ^LIBLWGEOM_IFACE_AGE | sed 's/[[^=]]*=\([[0-9]]\)/\1/g'`
++IFACE_REV = `cat Version.config | grep ^LIBLWGEOM_IFACE_REV | sed 's/[[^=]]*=\([[0-9]]\)/\1/g'`
+ 
++VERSION_INFO = $(IFACE_CURRENT):$(IFACE_REV):$(IFACE_AGE)
+ 
+ YACC=@YACC@
+ LEX=@LEX@
+@@ -130,10 +120,6 @@
+ 
+ LDFLAGS += -no-undefined
+ 
+-LT_SA_OBJS = $(SA_OBJS:.o=.lo)
+-LT_NM_OBJS = $(NM_OBJS:.o=.lo)
+-LT_OBJS = $(LT_SA_OBJS) $(LT_NM_OBJS)
+-
+ SA_HEADERS = \
+ 	bytebuffer.h \
+ 	effectivearea.h \
+@@ -156,34 +142,17 @@
+ 	stringbuffer.h \
+ 	varint.h
+ 
+-all: liblwgeom.la
+-
+-install: install-liblwgeom
+-
+-uninstall: uninstall-liblwgeom
+-
+-install-liblwgeom: liblwgeom.la
+-	$(LIBTOOL) --mode=install $(INSTALL) liblwgeom.la "$(DESTDIR)$(libdir)/liblwgeom.la"
+-	$(INSTALL) -m 0644 liblwgeom.h "$(DESTDIR)$(includedir)/liblwgeom.h"
+-	$(INSTALL) -m 0644 liblwgeom_topo.h "$(DESTDIR)$(includedir)/liblwgeom_topo.h"
+-
+-uninstall-liblwgeom:
+-	$(LIBTOOL) --mode=uninstall rm -f "$(DESTDIR)$(libdir)/liblwgeom.la"
+-	$(LIBTOOL) --mode=uninstall rm -f "$(DESTDIR)$(includedir)/liblwgeom.h"
+-	$(LIBTOOL) --mode=uninstall rm -f "$(DESTDIR)$(includedir)/liblwgeom_topo.h"
+-
+-# Make all objects depend upon postgis_config.h and postgis_svn_revision.h
+-$(LT_OBJS): ../postgis_config.h ../postgis_svn_revision.h $(SA_HEADERS)
+-
+-../postgis_svn_revision.h:
+-	$(MAKE) -C .. postgis_svn_revision.h
++all: liblwgeom.a
+ 
+-#liblwgeom.a: $(SA_OBJS) $(NM_OBJS) $(SA_HEADERS)
+-#ar rs liblwgeom.a $(SA_OBJS) $(NM_OBJS)
++install: liblwgeom.a
++	mkdir -p ${PREFIX}/lib
++	mkdir -p ${PREFIX}/include
++	cp liblwgeom.a ${PREFIX}/lib
++	cp liblwgeom.h ${PREFIX}/include
++	cp liblwgeom_topo.h ${PREFIX}/include
+ 
+-liblwgeom.la: $(LT_OBJS)
+-	$(LIBTOOL) --tag=CC --mode=link $(CC) -rpath $(libdir) $(LT_OBJS) \
+-             -release $(SOVER) -version-info $(VERSION_INFO) $(LDFLAGS) -o $@
++liblwgeom.a: $(SA_OBJS) $(NM_OBJS) $(SA_HEADERS)
++	ar rs liblwgeom.a $(SA_OBJS) $(NM_OBJS)
+ 
+ maintainer-clean: clean
+ 	rm -f lwin_wkt_lex.c
+@@ -191,25 +160,19 @@
+ 	rm -f lwin_wkt_parse.c
+ 
+ clean:
+-	$(MAKE) -C cunit clean
+ 	rm -f $(LT_OBJS) $(SA_OBJS) $(NM_OBJS)
+-	rm -f liblwgeom.la
+-	rm -rf .libs
++	rm -f liblwgeom.a
+ 
+ distclean: clean
+-	$(MAKE) -C cunit distclean
+-	rm -f liblwgeom.h Makefile
++	rm -f liblwgeom.h
+ 	rm -f Makefile
+ 
+-check: liblwgeom.la
+-	$(MAKE) -C cunit check
++$(SA_OBJS): %.o: %.c
++	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+ 
+-# Command to build each of the .lo files
+-$(LT_SA_OBJS): %.lo: %.c
+-	$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
++$(NM_OBJS): %.o: %.c
++	$(CC) $(CPPFLAGS) $(CFLAGS) $(NUMERICFLAGS) -c -o $@ $<
+ 
+-$(LT_NM_OBJS): %.lo: %.c
+-	$(LIBTOOL) --mode=compile $(CC) $(CPPFLAGS) $(CFLAGS) $(NUMERICFLAGS) -c -o $@ $<
+ 
+ lwin_wkt_parse.c lwin_wkt_parse.h: lwin_wkt_parse.y
+ 	$(YACC) -o'lwin_wkt_parse.c' -d lwin_wkt_parse.y
+@@ -217,5 +180,3 @@
+ lwin_wkt_lex.c: lwin_wkt_lex.l
+ 	$(LEX) -i lwin_wkt_lex.l
+ 
+-liblwgeom.h: liblwgeom.h.in
+-	cd .. && ./config.status
+diff -ruN liblwgeom/Version.config liblwgeom_new/Version.config
+--- liblwgeom/Version.config	1969-12-31 19:00:00.000000000 -0500
++++ liblwgeom_new/Version.config	2017-10-03 15:12:48.000000000 -0400
+@@ -0,0 +1,22 @@
++# Version numbering central repository, to be included from various
++# places during the build process
++
++# See HOWTO_RELEASE file in SVN for definitions of those three.
++
++POSTGIS_MAJOR_VERSION=2
++POSTGIS_MINOR_VERSION=3
++POSTGIS_MICRO_VERSION=3
++
++# Liblwgeom interface versioning, reset to 0:0:0 (cur:age:rev)
++# when changing POSTGIS_MINOR_VERSION
++
++# Current interface, increments when adding an interface
++LIBLWGEOM_IFACE_CUR=0
++# Age of current interface, only changes when current interface
++# changes, either incrementing with it (compatible change) or
++# going back to zero (incompatible change).
++LIBLWGEOM_IFACE_AGE=0
++# Revision of current interface, set to 0 when adding an interface
++# or increment when just changing implementations.
++LIBLWGEOM_IFACE_REV=0
++
+diff -ruN liblwgeom/configure.ac liblwgeom_new/configure.ac
+--- liblwgeom/configure.ac	1969-12-31 19:00:00.000000000 -0500
++++ liblwgeom_new/configure.ac	2017-10-03 15:12:48.000000000 -0400
+@@ -0,0 +1,101 @@
++AC_PREREQ(2.61)
++
++AC_INIT([liblwgeom], [2.3.3])
++
++: ${R_HOME=`R RHOME`}
++if test -z "${R_HOME}"; then
++  AC_MSG_ERROR([Could not determine R_HOME.])
++fi
++
++AC_MSG_NOTICE([R_HOME: ${R_HOME}])
++
++# ===========================================================================
++# Compiler stuff
++# ===========================================================================
++
++CC=`${R_HOME}/bin/R CMD config CC`
++CPPFLAGS=""
++CFLAGS=`R CMD config CFLAGS`
++LDFLAGS=""
++WARNFLAGS="-Wall -Wmissing-prototypes"
++
++# ===========================================================================
++# yacc and lex stuff
++# ===========================================================================
++
++AC_PROG_LEX
++AC_PROG_YACC
++
++AC_SUBST([LEX])
++AC_SUBST([YACC])
++
++# ===========================================================================
++# postgis version stuff
++# ===========================================================================
++
++POSTGIS_MAJOR_VERSION=`cat Version.config | grep ^POSTGIS_MAJOR_VERSION | sed 's/[[^=]]*=\([[0-9]]\)/\1/g'`
++POSTGIS_MINOR_VERSION=`cat Version.config | grep ^POSTGIS_MINOR_VERSION | sed 's/[[^=]]*=\([[0-9]]\)/\1/g'`
++POSTGIS_PATCH_VERSION=`cat Version.config | grep ^POSTGIS_MICRO_VERSION | sed 's/[[^=]]*=\([[0-9]]\)/\1/g'`
++POSTGIS_LIB_VERSION=${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}.${POSTGIS_PATCH_VERSION}
++
++# ===========================================================================
++# SRID stuff
++# ===========================================================================
++
++SRID_MAX=999999
++SRID_USR_MAX=998999
++
++AC_SUBST([SRID_MAX])
++AC_SUBST([SRID_USR_MAX])
++
++# ===========================================================================
++# GEOS stuff
++# ===========================================================================
++
++
++### FIXME
++GEOS_CONFIG="geos-config"
++
++GEOS_FULL_VERSION=`${GEOS_CONFIG} --version`
++GEOS_MAJOR_VERSION=`${GEOS_CONFIG} --version | cut -d. -f1 | sed 's/[[^0-9]]//g'`
++GEOS_MINOR_VERSION=`${GEOS_CONFIG} --version | cut -d. -f2 | sed 's/[[^0-9]]//g'`
++GEOS_PATCH_VERSION=`${GEOS_CONFIG} --version | cut -d. -f3 | sed 's/[[^0-9]]//g'`
++if test x"${GEOS_PATCH_VERSION}" = x""; then
++  GEOS_PATCH_VERSION="0";
++fi
++POSTGIS_GEOS_VERSION="${GEOS_MAJOR_VERSION}${GEOS_MINOR_VERSION}"
++
++CPPFLAGS="${CPPFLAGS} `${GEOS_CONFIG} --cflags`"
++LDFLAGS="${LDFLAGS} `${GEOS_CONFIG} --clibs`"
++
++AC_SUBST([POSTGIS_LIB_VERSION])
++AC_SUBST([POSTGIS_MAJOR_VERSION])
++AC_SUBST([POSTGIS_MINOR_VERSION])
++
++AC_SUBST([POSTGIS_GEOS_VERSION])
++
++# ===========================================================================
++# SFCGAL stuff
++# ===========================================================================
++
++### Fix me
++
++# ===========================================================================
++# Config stuff
++# ===========================================================================
++
++#AC_MSG_NOTICE([CC: ${CC}])
++#AC_MSG_NOTICE([CPPFLAGS: ${CPPFLAGS}])
++#AC_MSG_NOTICE([CFLAGS: ${CFLAGS}])
++#AC_MSG_NOTICE([LDFLAGS: ${LDFLAGS}])
++#AC_MSG_NOTICE([WARNFLAGS: ${WARNFLAGS}])
++
++AC_SUBST([CC])
++AC_SUBST([CPPFLAGS])
++AC_SUBST([CFLAGS])
++AC_SUBST([LDFLAGS])
++AC_SUBST([WARNFLAGS])
++
++
++AC_CONFIG_FILES([Makefile liblwgeom.h])
++AC_OUTPUT
+diff -ruN liblwgeom/cunit/cu_tester.c liblwgeom_new/cunit/cu_tester.c
+--- liblwgeom/cunit/cu_tester.c	2016-07-16 11:20:06.000000000 -0400
++++ liblwgeom_new/cunit/cu_tester.c	2017-10-03 15:12:48.000000000 -0400
+@@ -14,7 +14,7 @@
+ #include "CUnit/Basic.h"
+ #include "liblwgeom_internal.h"
+ #include "cu_tester.h"
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ 
+ /* Internal funcs */
+ static void
+diff -ruN liblwgeom/liblwgeom.h.in liblwgeom_new/liblwgeom.h.in
+--- liblwgeom/liblwgeom.h.in	2016-09-14 12:04:46.000000000 -0400
++++ liblwgeom_new/liblwgeom.h.in	2017-10-03 15:12:48.000000000 -0400
+@@ -65,6 +65,7 @@
+ #define LIBLWGEOM_VERSION_MAJOR "@POSTGIS_MAJOR_VERSION@"
+ #define LIBLWGEOM_VERSION_MINOR "@POSTGIS_MINOR_VERSION@"
+ #define LIBLWGEOM_GEOS_VERSION "@POSTGIS_GEOS_VERSION@"
++#define POSTGIS_GEOS_VERSION @POSTGIS_GEOS_VERSION@
+ 
+ /** Return lwgeom version string (not to be freed) */
+ const char* lwgeom_version(void);
+diff -ruN liblwgeom/liblwgeom_internal.h liblwgeom_new/liblwgeom_internal.h
+--- liblwgeom/liblwgeom_internal.h	2016-07-04 11:45:56.000000000 -0400
++++ liblwgeom_new/liblwgeom_internal.h	2017-10-03 15:12:48.000000000 -0400
+@@ -29,7 +29,7 @@
+ #ifndef _LIBLWGEOM_INTERNAL_H
+ #define _LIBLWGEOM_INTERNAL_H 1
+ 
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ 
+ #include "lwgeom_log.h"
+ 
+diff -ruN liblwgeom/liblwgeom_topo_internal.h liblwgeom_new/liblwgeom_topo_internal.h
+--- liblwgeom/liblwgeom_topo_internal.h	2016-07-04 11:45:56.000000000 -0400
++++ liblwgeom_new/liblwgeom_topo_internal.h	2017-10-03 15:12:48.000000000 -0400
+@@ -26,7 +26,7 @@
+ #ifndef LIBLWGEOM_TOPO_INTERNAL_H
+ #define LIBLWGEOM_TOPO_INTERNAL_H 1
+ 
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ 
+ #include "liblwgeom.h"
+ #include "liblwgeom_topo.h"
+diff -ruN liblwgeom/lwgeom_api.c liblwgeom_new/lwgeom_api.c
+--- liblwgeom/lwgeom_api.c	2016-04-27 10:45:28.000000000 -0400
++++ liblwgeom_new/lwgeom_api.c	2017-10-03 15:12:48.000000000 -0400
+@@ -30,7 +30,7 @@
+ #include <stdio.h>
+ #include <errno.h>
+ #include <assert.h>
+-#include "../postgis_svn_revision.h"
++#include "postgis_svn_revision.h"
+ 
+ /*
+  * Lower this to reduce integrity checks
+diff -ruN liblwgeom/lwgeom_geos_split.c liblwgeom_new/lwgeom_geos_split.c
+--- liblwgeom/lwgeom_geos_split.c	2016-07-04 11:45:56.000000000 -0400
++++ liblwgeom_new/lwgeom_geos_split.c	2017-10-03 15:12:48.000000000 -0400
+@@ -22,7 +22,7 @@
+  *
+  **********************************************************************/
+ 
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ /*#define POSTGIS_DEBUG_LEVEL 4*/
+ #include "lwgeom_geos.h"
+ #include "liblwgeom_internal.h"
+diff -ruN liblwgeom/lwgeom_topo.c liblwgeom_new/lwgeom_topo.c
+--- liblwgeom/lwgeom_topo.c	2017-03-11 11:23:45.000000000 -0500
++++ liblwgeom_new/lwgeom_topo.c	2017-10-03 15:12:48.000000000 -0400
+@@ -24,7 +24,7 @@
+ 
+ 
+ 
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ 
+ /*#define POSTGIS_DEBUG_LEVEL 1*/
+ #include "lwgeom_log.h"
+diff -ruN liblwgeom/lwgeom_transform.c liblwgeom_new/lwgeom_transform.c
+--- liblwgeom/lwgeom_transform.c	2016-04-27 10:45:28.000000000 -0400
++++ liblwgeom_new/lwgeom_transform.c	2017-10-03 15:12:48.000000000 -0400
+@@ -23,7 +23,7 @@
+  **********************************************************************/
+ 
+ 
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ #include "liblwgeom.h"
+ #include "lwgeom_log.h"
+ #include <string.h>
+diff -ruN liblwgeom/lwgeom_wrapx.c liblwgeom_new/lwgeom_wrapx.c
+--- liblwgeom/lwgeom_wrapx.c	2016-06-16 10:06:47.000000000 -0400
++++ liblwgeom_new/lwgeom_wrapx.c	2017-10-03 15:12:48.000000000 -0400
+@@ -22,7 +22,7 @@
+  *
+  **********************************************************************/
+ 
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ /*#define POSTGIS_DEBUG_LEVEL 4*/
+ #include "lwgeom_geos.h"
+ #include "liblwgeom_internal.h"
+diff -ruN liblwgeom/lwin_encoded_polyline.c liblwgeom_new/lwin_encoded_polyline.c
+--- liblwgeom/lwin_encoded_polyline.c	2015-12-14 05:11:21.000000000 -0500
++++ liblwgeom_new/lwin_encoded_polyline.c	2017-10-03 15:12:48.000000000 -0400
+@@ -26,7 +26,7 @@
+ #include <assert.h>
+ #include <string.h>
+ #include "liblwgeom.h"
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ 
+ LWGEOM*
+ lwgeom_from_encoded_polyline(const char *encodedpolyline, int precision)
+diff -ruN liblwgeom/lwin_geojson.c liblwgeom_new/lwin_geojson.c
+--- liblwgeom/lwin_geojson.c	2016-07-04 11:45:56.000000000 -0400
++++ liblwgeom_new/lwin_geojson.c	2017-10-03 15:12:48.000000000 -0400
+@@ -27,7 +27,7 @@
+ #include <assert.h>
+ #include "liblwgeom.h"
+ #include "lwgeom_log.h"
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ 
+ #if defined(HAVE_LIBJSON) || defined(HAVE_LIBJSON_C) /* --{ */
+ 
+diff -ruN liblwgeom/lwin_wkb.c liblwgeom_new/lwin_wkb.c
+--- liblwgeom/lwin_wkb.c	2016-04-27 10:45:28.000000000 -0400
++++ liblwgeom_new/lwin_wkb.c	2017-10-03 15:12:48.000000000 -0400
+@@ -23,7 +23,7 @@
+  **********************************************************************/
+ 
+ 
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ /*#define POSTGIS_DEBUG_LEVEL 4*/
+ #include "liblwgeom_internal.h" /* NOTE: includes lwgeom_log.h */
+ #include "lwgeom_log.h"
+diff -ruN liblwgeom/lwpoint.c liblwgeom_new/lwpoint.c
+--- liblwgeom/lwpoint.c	2016-04-27 10:45:28.000000000 -0400
++++ liblwgeom_new/lwpoint.c	2017-10-03 15:12:48.000000000 -0400
+@@ -26,7 +26,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ /*#define POSTGIS_DEBUG_LEVEL 4*/
+ #include "liblwgeom_internal.h"
+ #include "lwgeom_log.h"
+diff -ruN liblwgeom/lwutil.c liblwgeom_new/lwutil.c
+--- liblwgeom/lwutil.c	2016-07-04 11:45:56.000000000 -0400
++++ liblwgeom_new/lwutil.c	2017-10-03 15:12:48.000000000 -0400
+@@ -33,7 +33,7 @@
+ #include <ctype.h> /* for tolower */
+ 
+ /* Global variables */
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ #include "liblwgeom_internal.h"
+ #include "lwgeom_log.h"
+ 
+diff -ruN liblwgeom/postgis_config_stub.h liblwgeom_new/postgis_config_stub.h
+--- liblwgeom/postgis_config_stub.h	1969-12-31 19:00:00.000000000 -0500
++++ liblwgeom_new/postgis_config_stub.h	2017-10-03 15:12:48.000000000 -0400
+@@ -0,0 +1,9 @@
++#ifndef POSTGIS_CONFIG_STUB_H
++#define POSTGIS_CONFIG_STUB_H 1
++
++#define POSTGIS_DEBUG_LEVEL 0
++
++#define POSTGIS_GEOS_VERSION 36
++
++
++#endif /* POSTGIS_CONFIG_STUB_H */
+\ No newline at end of file
+diff -ruN liblwgeom/postgis_svn_revision.h liblwgeom_new/postgis_svn_revision.h
+--- liblwgeom/postgis_svn_revision.h	1969-12-31 19:00:00.000000000 -0500
++++ liblwgeom_new/postgis_svn_revision.h	2017-10-03 15:12:48.000000000 -0400
+@@ -0,0 +1 @@
++#define POSTGIS_SVN_REVISION 15473
+diff -ruN liblwgeom/ptarray.c liblwgeom_new/ptarray.c
+--- liblwgeom/ptarray.c	2016-09-23 13:38:30.000000000 -0400
++++ liblwgeom_new/ptarray.c	2017-10-03 15:12:48.000000000 -0400
+@@ -27,7 +27,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ 
+-#include "../postgis_config.h"
++#include "postgis_config_stub.h"
+ /*#define POSTGIS_DEBUG_LEVEL 4*/
+ #include "liblwgeom_internal.h"
+ #include "lwgeom_log.h"

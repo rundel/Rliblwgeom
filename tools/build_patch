@@ -1,0 +1,64 @@
+#!/bin/sh
+
+if test -z $1; then
+  echo "Please provide postgis version"
+  exit 0
+fi
+
+CUR_DIR=`pwd`
+
+POSTGIS_VERSION=$1
+POSTGIS_DIR="postgis-${POSTGIS_VERSION}"
+POSTGIS_URL="http://download.osgeo.org/postgis/source/postgis-${POSTGIS_VERSION}.tar.gz"
+CHANGES_DIR="build/${POSTGIS_VERSION}"
+
+CUR_LIB=liblwgeom
+PATCHED_LIB=liblwgeom_new
+
+if ! test -d "${POSTGIS_DIR}"; then
+  : ${R_HOME=`R RHOME`}
+  if test -z "${R_HOME}"; then
+    echo "Need R_HOME (R) to download postgis."
+    exit 0
+  fi
+
+  echo "Downloading postgis v${POSTGIS_VERSION} from ${POSTGIS_URL}."
+  ${R_HOME}/bin/Rscript tools/download_zip.R "${POSTGIS_URL}" "./"
+fi
+
+if ! test -d ${CHANGES_DIR}; then
+  echo "Could not find change set for postgis v${POSTGIS_VERSION}"
+  exit 0
+fi
+
+# Cleanup folder
+
+rm -rf ${POSTGIS_DIR}/liblwgeom/.libs
+rm -f ${POSTGIS_DIR}/liblwgeom/*.o 
+rm -f ${POSTGIS_DIR}/liblwgeom/*.lo
+rm -f ${POSTGIS_DIR}/liblwgeom/Makefile 
+rm -f ${POSTGIS_DIR}/liblwgeom/liblwgeom.h
+
+
+# Copy lib and patch details
+ 
+rm -rf ${POSTGIS_DIR}/liblwgeom_new
+mkdir ${POSTGIS_DIR}/liblwgeom_new
+cp -r ${POSTGIS_DIR}/liblwgeom/ ${POSTGIS_DIR}/liblwgeom_new/
+
+cp -r ${CHANGES_DIR}/ ${POSTGIS_DIR}/liblwgeom_new/
+
+
+cd ${POSTGIS_DIR}/liblwgeom_new/
+
+if test -e fixes.sh; then
+  sh fixes.sh
+  rm -f fixes.sh
+fi
+
+cd ..
+
+
+# Create patch file
+#echo `pwd`
+diff -ruN liblwgeom/ liblwgeom_new/ > ${CUR_DIR}/build/liblwgeom_${POSTGIS_VERSION}.patch

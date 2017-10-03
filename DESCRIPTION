@@ -1,0 +1,14 @@
+Package: liblwgeom
+Type: Package
+Title: R package providing the liblwgeom library from postgis
+Version: 0.1.0
+Date: 2016-12-12
+Author: Colin Rundel
+Maintainer: Colin Rundel <rundel@gmail.com>
+Description: Blah blah blah
+License: GPL (>= 2)
+LazyLoad: yes
+LinkingTo: Rcpp
+Imports: Rcpp (>= 0.11.0)
+URL: http://www.github.com/rundel/liblwgeom
+BugReports: http://www.github.com/rundel/liblwgeom/issues

@@ -1,0 +1,37 @@
+#!/bin/sh
+
+POSTGIS_VERSION="2.3.3"
+
+POSTGIS_URL="http://download.osgeo.org/postgis/source/postgis-${POSTGIS_VERSION}.tar.gz"
+POSTGIS_DIR="postgis-${POSTGIS_VERSION}"
+LIBLWGEOM_DIR="liblwgeom"
+
+
+if ! test -d "${POSTGIS_DIR}"; then
+  R_HOME=`R RHOME`
+  if test -z "${R_HOME}"; then
+    echo "Could not determine R_HOME."
+    exit 1
+  fi
+
+  echo "Downloading postgis v${POSTGIS_VERSION} from ${POSTGIS_URL}."
+  ${R_HOME}/bin/Rscript tools/download_zip.R "${POSTGIS_URL}" "./"
+
+  cd ${POSTGIS_DIR}
+  ./autogen.sh
+  cd ..
+fi
+  
+
+rm -rf ${LIBLWGEOM_DIR}/ 
+mkdir ${LIBLWGEOM_DIR}/
+cp -r ${POSTGIS_DIR}/liblwgeom/ ${LIBLWGEOM_DIR}/
+
+patch -s -p0 < build/liblwgeom_${POSTGIS_VERSION}.patch
+
+#rm -rf ${POSTGIS_DIR}/
+
+
+cd ${LIBLWGEOM_DIR}/; autoconf; cd ..
+
+autoconf
