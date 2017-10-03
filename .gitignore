@@ -8,7 +8,6 @@ libgeos_*.tar.gz
 src/*.o
 src/*.so
 src/*.dll
-configure
 src/symbols.rds
 config.log
 geos-*/
