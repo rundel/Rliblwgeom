@@ -1,0 +1,182 @@
+#/**********************************************************************
+# *
+# * PostGIS - Spatial Types for PostgreSQL
+# * http://postgis.net
+# *
+# * PostGIS is free software: you can redistribute it and/or modify
+# * it under the terms of the GNU General Public License as published by
+# * the Free Software Foundation, either version 2 of the License, or
+# * (at your option) any later version.
+# *
+# * PostGIS is distributed in the hope that it will be useful,
+# * but WITHOUT ANY WARRANTY; without even the implied warranty of
+# * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# * GNU General Public License for more details.
+# *
+# * You should have received a copy of the GNU General Public License
+# * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+# *
+# **********************************************************************
+# *
+# * Copyright 2008 Mark Cave-Ayland
+# *
+# **********************************************************************/
+
+PREFIX = ../inst
+
+CC = @CC@
+CPPFLAGS = @CPPFLAGS@
+CFLAGS = @CFLAGS@
+LDFLAGS = @LDFLAGS@
+
+IFACE_CURRENT = `cat Version.config | grep ^LIBLWGEOM_IFACE_CUR | sed 's/[[^=]]*=\([[0-9]]\)/\1/g'`
+IFACE_AGE = `cat Version.config | grep ^LIBLWGEOM_IFACE_AGE | sed 's/[[^=]]*=\([[0-9]]\)/\1/g'`
+IFACE_REV = `cat Version.config | grep ^LIBLWGEOM_IFACE_REV | sed 's/[[^=]]*=\([[0-9]]\)/\1/g'`
+
+VERSION_INFO = $(IFACE_CURRENT):$(IFACE_REV):$(IFACE_AGE)
+
+YACC=@YACC@
+LEX=@LEX@
+
+# Standalone LWGEOM objects
+SA_OBJS = \
+	stringbuffer.o \
+	bytebuffer.o \
+	measures.o \
+	measures3d.o \
+	box2d.o \
+	ptarray.o \
+	lwgeom_api.o \
+	lwgeom.o \
+	lwpoint.o \
+	lwline.o \
+	lwpoly.o \
+	lwtriangle.o \
+	lwmpoint.o \
+	lwmline.o \
+	lwmpoly.o \
+	lwboundingcircle.o \
+	lwcollection.o \
+	lwcircstring.o \
+	lwcompound.o \
+	lwcurvepoly.o \
+	lwmcurve.o \
+	lwmsurface.o \
+	lwpsurface.o \
+	lwtin.o \
+	lwout_wkb.o \
+	lwin_geojson.o \
+	lwin_wkb.o \
+	lwin_twkb.o \
+	lwiterator.o \
+	lwgeom_median.o \
+	lwout_wkt.o \
+	lwout_twkb.o \
+	lwin_wkt_parse.o \
+	lwin_wkt_lex.o \
+	lwin_wkt.o \
+	lwin_encoded_polyline.o \
+	lwutil.o \
+	lwhomogenize.o \
+	lwalgorithm.o \
+	lwstroke.o \
+	lwlinearreferencing.o \
+	lwprint.o \
+	g_box.o \
+	g_serialized.o \
+	g_util.o \
+	lwgeodetic.o \
+	lwgeodetic_tree.o \
+	lwtree.o \
+	lwout_gml.o \
+	lwout_kml.o \
+	lwout_geojson.o \
+	lwout_svg.o \
+	lwout_x3d.o \
+	lwout_encoded_polyline.o \
+	lwgeom_debug.o \
+	lwgeom_geos.o \
+	lwgeom_geos_clean.o \
+	lwgeom_geos_cluster.o \
+	lwgeom_geos_node.o \
+	lwgeom_geos_split.o \
+	lwgeom_topo.o \
+	lwgeom_transform.o \
+	lwgeom_wrapx.o \
+	lwunionfind.o \
+	effectivearea.o \
+	lwkmeans.o \
+	kmeans.o \
+	varint.o
+
+NM_OBJS = \
+	lwspheroid.o
+
+ifeq (@SFCGAL@,sfcgal)
+CFLAGS += @SFCGAL_CPPFLAGS@
+LDFLAGS += @SFCGAL_LDFLAGS@
+SA_OBJS += lwgeom_sfcgal.o
+endif
+
+LDFLAGS += -no-undefined
+
+SA_HEADERS = \
+	bytebuffer.h \
+	effectivearea.h \
+	liblwgeom.h \
+	liblwgeom_internal.h \
+	lwgeodetic.h \
+	lwgeodetic_tree.h \
+	liblwgeom_topo.h \
+	liblwgeom_topo_internal.h \
+	lwgeom_log.h \
+	lwgeom_geos.h \
+	lwgeom_log.h \
+	lwgeom_sfcgal.h \
+	lwin_wkt.h \
+	lwin_wkt_parse.h \
+	lwout_twkb.h \
+	lwtree.h \
+	measures3d.h \
+	measures.h \
+	stringbuffer.h \
+	varint.h
+
+all: liblwgeom.a
+
+install: liblwgeom.a
+	mkdir -p ${PREFIX}/lib
+	mkdir -p ${PREFIX}/include
+	cp liblwgeom.a ${PREFIX}/lib
+	cp liblwgeom.h ${PREFIX}/include
+	cp liblwgeom_topo.h ${PREFIX}/include
+
+liblwgeom.a: $(SA_OBJS) $(NM_OBJS) $(SA_HEADERS)
+	ar rs liblwgeom.a $(SA_OBJS) $(NM_OBJS)
+
+maintainer-clean: clean
+	rm -f lwin_wkt_lex.c
+	rm -f lwin_wkt_parse.h
+	rm -f lwin_wkt_parse.c
+
+clean:
+	rm -f $(LT_OBJS) $(SA_OBJS) $(NM_OBJS)
+	rm -f liblwgeom.a
+
+distclean: clean
+	rm -f liblwgeom.h
+	rm -f Makefile
+
+$(SA_OBJS): %.o: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+$(NM_OBJS): %.o: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(NUMERICFLAGS) -c -o $@ $<
+
+
+lwin_wkt_parse.c lwin_wkt_parse.h: lwin_wkt_parse.y
+	$(YACC) -o'lwin_wkt_parse.c' -d lwin_wkt_parse.y
+
+lwin_wkt_lex.c: lwin_wkt_lex.l
+	$(LEX) -i lwin_wkt_lex.l
+
